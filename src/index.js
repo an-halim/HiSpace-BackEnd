@@ -6,7 +6,6 @@ import helmet from "helmet";
 import dotenv from "dotenv";
 import db from "./database/index.js";
 import models from "./models/index.js";
-import ejs from "ejs";
 
 dotenv.config();
 const port = process.env.PORT || 3000;
