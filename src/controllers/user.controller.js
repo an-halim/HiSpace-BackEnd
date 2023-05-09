@@ -32,7 +32,7 @@ const userController = {
 			User.create(data)
 				.then((result) => {
 					const token = jwt.sign(
-						{ userName: result.userName, email: result.email },
+						{ email: result.email },
 						process.env.JWT_SECRET_KEY,
 						{
 							expiresIn: "1h",
@@ -41,7 +41,6 @@ const userController = {
 					response.created(
 						res,
 						{
-							userName: result.userName,
 							email: result.email,
 							fullName: result.fullName,
 							profilePic: result?.profilePic || null,
@@ -76,7 +75,7 @@ const userController = {
 			}
 
 			const token = jwt.sign(
-				{ userName: user.userName, email: user.email },
+				{ email: user.email },
 				process.env.JWT_SECRET_KEY,
 				{
 					expiresIn: "1h",
@@ -89,7 +88,6 @@ const userController = {
 			});
 
 			response.success(res, {
-				userName: user.userName,
 				email: user.email,
 				fullName: user.fullName,
 				profilePic: user?.profilePic || null,
@@ -108,7 +106,7 @@ const userController = {
 			);
 
 			User.findOne({
-				where: { userName: userDetail.userName },
+				where: { email: userDetail.email },
 				attributes: { exclude: ["password"] },
 				include: [
 					{
@@ -137,7 +135,7 @@ const userController = {
 			);
 
 			let user = User.findOne({
-				where: { userName: userDetail.userName },
+				where: { email: userDetail.email },
 			});
 
 			if (!user) {
@@ -178,20 +176,21 @@ const userController = {
 			});
 		}
 
-		const randomPassword = Math.random().toString(36).slice(-8);
-		const hashPassword = hash(randomPassword);
+		const randomPassword = Math.random().toString(36).slice(-16);
 		try {
 			await User.update(
-				{ password: hashPassword },
+				{ tempPassword: randomPassword },
 				{ where: { email: email } }
 			);
 
-			let html = `<p>Hi ${user.fullName},</p>
-      <p>We have reset your password. Please login with this password: <b>${randomPassword}</b></p>
-      <p>Thank you.</p>
-      <p>HiSpace Team</p>`;
-
+			// please visit
+			let html = `<h1>Reset Password</h1>
+			<p>Hi ${user.fullName},</p>
+			<p>We have received a request to reset your password. If you did not make this request, simply ignore this email. Otherwise, please click the button below to reset your password:</p>
+			<a href="http://localhost:3000/reset-password/${randomPassword}">Reset Password</a>
+			<p>Thank you.</p>`;
 			let info = await sendMail(email, "Reset Password", html);
+
 			console.log("[SERVER] Message sent: %s", info.messageId, info.accepted);
 			res.json({
 				status: "success",
@@ -202,38 +201,61 @@ const userController = {
 		}
 	},
 
-	// upadePassword: async (req, res) => {
-	// 	const password = req.body.password;
-	// 	try {
-	// 		const userDetail = jwt.verify(
-	// 			req.headers.authorization?.split(" ")[1] || req.cookies["token"],
-	// 			process.env.JWT_SECRET_KEY
-	// 		);
+	verifyToken: async (req, res) => {
+		const token = req.params.token;
+		try {
+			if (!token) {
+				return response.badRequest(res, "Please fill all the field");
+			}
 
-	// 		if (!password) {
-	// 			return response.badRequest(res, "Please fill all the field");
-	// 		}
+			User.findOne({
+				where: { tempPassword: token },
+			})
+				.then((result) => {
+					if (!result) {
+						return response.notFound(res, "Token is not valid");
+					}
+					res.cookie("token", token, {
+						expiresIn: new Date(Date.now() + 3600000),
+						httpOnly: true,
+					});
+					response.success(res, "Token is valid");
+				})
+				.catch((err) => {
+					response.failed(res, err);
+				});
+		} catch (err) {
+			response.serverError(res, err);
+		}
+	},
+	upadatePassword: async (req, res) => {
+		const token = req.params.token;
+		const { password } = req.body;
+		try {
+			if (!token || !password) {
+				return response.badRequest(res, "Please fill all the field");
+			}
 
-	// 		User.findOne({
-	// 			where: { nim: userDetail.nim },
-	// 		})
-	// 			.then((result) => {
-	// 				const hashPassword = hash(password);
+			User.findOne({
+				where: { tempPassword: token },
+			})
+				.then((result) => {
+					const hashPassword = hash(password);
 
-	// 				User.update(
-	// 					{ password: hashPassword },
-	// 					{ where: { nim: userDetail.nim } }
-	// 				).then((result) => {
-	// 					response.success(res, "Password has been updated");
-	// 				});
-	// 			})
-	// 			.catch((err) => {
-	// 				response.failed(res, err);
-	// 			});
-	// 	} catch (err) {
-	// 		response.serverError(res, err);
-	// 	}
-	// },
+					User.update(
+						{ password: hashPassword },
+						{ where: { tempPassword: token } }
+					).then((result) => {
+						response.success(res, "Password has been updated");
+					});
+				})
+				.catch((err) => {
+					response.failed(res, err);
+				});
+		} catch (err) {
+			response.serverError(res, err);
+		}
+	},
 };
 
 export default userController;

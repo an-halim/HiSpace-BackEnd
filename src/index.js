@@ -1,16 +1,19 @@
 import express from "express";
-import router from "./routes/index.js";
+import API from "./routes/index.js";
+import web from "./routes/web.js";
 import morgan from "morgan";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import db from "./database/index.js";
 import models from "./models/index.js";
+import ejs from "ejs";
 
 dotenv.config();
 const port = process.env.PORT || 3000;
 
 const app = express();
 
+app.use(express.static("views"));
 app.use(morgan("dev"));
 app.use(helmet());
 app.use(express.json());
@@ -25,8 +28,9 @@ try {
 } catch (err) {
 	console.log(`Error: ${err}`);
 }
-app.get("/", (req, res) => res.json({ message: "HiSpace API" }));
-app.use("/api", router);
+
+app.use("/api", API);
+app.use("/", web);
 
 app.use(function (err, req, res, next) {
 	res.locals.message = err.message;

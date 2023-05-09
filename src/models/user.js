@@ -9,10 +9,6 @@ const user = db.define(
 			defaultValue: DataTypes.UUIDV4,
 			primaryKey: true,
 		},
-		userName: {
-			type: db.Sequelize.STRING,
-			allowNull: false,
-		},
 		fullName: {
 			type: db.Sequelize.STRING,
 			allowNull: false,
@@ -27,6 +23,10 @@ const user = db.define(
       unique: true,
 		},
 		profilePic: {
+			type: db.Sequelize.STRING,
+			allowNull: true,
+		},
+		tempPassword: {
 			type: db.Sequelize.STRING,
 			allowNull: true,
 		},
