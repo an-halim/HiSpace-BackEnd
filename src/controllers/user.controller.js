@@ -6,7 +6,6 @@ import errorTracker from "../utils/sequelizeErr.js";
 import bcrypt from "bcrypt";
 import WishList from "../models/wishlist.js";
 import sendMail from "../services/mail.js";
-import user from "../models/user.js";
 
 /**
  *
@@ -243,7 +242,10 @@ const userController = {
 					const hashPassword = hash(password);
 
 					User.update(
-						{ password: hashPassword },
+						{
+							password: hashPassword,
+							tempPassword: null,
+						},
 						{ where: { tempPassword: token } }
 					).then((result) => {
 						response.success(res, "Password has been updated");

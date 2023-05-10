@@ -59,12 +59,10 @@
 				e.preventDefault();
         const rootUrl = window.location.origin;
         const token = window.location.pathname.split("/")[2];
-				const email = document.querySelector("#email").value;
 				const password = document.querySelector("#password").value;
 				const confirmPassword =
 					document.querySelector("#confirmPassword").value;
 				const data = {
-					email,
 					password,
 					confirmPassword,
 				};
