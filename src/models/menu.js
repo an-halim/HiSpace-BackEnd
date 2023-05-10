@@ -1,4 +1,5 @@
 import db from "../database/index.js";
+import location from "./location.js";
 
 const menu = db.define("menu", {
   menuId: {
@@ -22,5 +23,8 @@ const menu = db.define("menu", {
 }, {
   freezeTableName: true,
 })
+
+menu.belongsTo(location);
+location.hasMany(menu);
 
 export default menu;

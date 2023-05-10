@@ -1,4 +1,5 @@
 import db from "../database/index.js";
+import location from "./location.js";
 
 const facility = db.define("facility", {
   facilityId: {
@@ -18,5 +19,8 @@ const facility = db.define("facility", {
 }, {
   freezeTableName: true,
 })
+
+facility.belongsTo(location);
+location.hasMany(facility);
 
 export default facility;

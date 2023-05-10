@@ -1,5 +1,6 @@
 import db from "../database/index.js";
 import user from "./user.js";
+import location from "./location.js";
 
 const wishList = db.define("wishList", {
   id: {
@@ -19,5 +20,8 @@ const wishList = db.define("wishList", {
 
 wishList.belongsTo(user);
 user.hasMany(wishList);
+
+wishList.belongsTo(location);
+location.hasMany(wishList);
 
 export default wishList;

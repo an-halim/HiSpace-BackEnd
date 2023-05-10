@@ -1,11 +1,12 @@
 import express from "express";
-import API from "./routes/index.js";
+import API from "./routes/API.js";
 import web from "./routes/web.js";
 import morgan from "morgan";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import db from "./database/index.js";
 import models from "./models/index.js";
+import seed from "./utils/seeders.js";
 
 dotenv.config();
 const port = process.env.PORT || 3000;
@@ -16,13 +17,14 @@ app.use(express.static("views"));
 app.use(morgan("dev"));
 app.use(helmet());
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
 try {
 	await db.authenticate({
 		logging: false,
 	});
 	await models();
+	await seed();
 	console.log("Database connected");
 } catch (err) {
 	console.log(`Error: ${err}`);

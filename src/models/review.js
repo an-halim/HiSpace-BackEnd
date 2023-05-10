@@ -1,4 +1,6 @@
 import db from "../database/index.js";
+import user from "./user.js";
+import location from "./location.js";
 
 
 const review = db.define("review", {
@@ -26,5 +28,11 @@ const review = db.define("review", {
 }, {
   freezeTableName: true,
 })
+
+review.belongsTo(user);
+user.hasMany(review);
+
+review.belongsTo(location);
+location.hasMany(review);
 
 export default review;

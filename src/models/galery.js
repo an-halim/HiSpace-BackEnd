@@ -1,4 +1,5 @@
 import db from "../database/index.js";
+import location from "./location.js";
 
 
 const galery = db.define("galery", {
@@ -19,5 +20,8 @@ const galery = db.define("galery", {
 }, {
   freezeTableName: true,
 })
+
+galery.belongsTo(location);
+location.hasMany(galery);
 
 export default galery;
