@@ -4,6 +4,7 @@ import {
 	locationController as location,
 } from "../controllers/index.js";
 import authorize from "../middlewares/authorize.js";
+import formidable from "../middlewares/formidable.js";
 
 const router = express.Router();
 
@@ -14,9 +15,10 @@ router.post("/reset-password", user.forgot);
 router.post("/reset-password/:token", user.upadatePassword);
 router.post("/verify-token/:token", user.verifyToken);
 router.get("/me", authorize, user.detail);
-router.put("/me", authorize, user.updateDetail);
+router.put("/me", authorize, formidable, user.updateDetail);
 
 // location
+router.post("/location", authorize, formidable, location.createLocation);
 router.get("/location", location.getAllLocation);
 router.get("/location/:locationId", location.getLocationById);
 

@@ -10,7 +10,10 @@ const authorize = (req, res, next) => {
       req.headers?.authorization?.split(" ")[1] || req.cookies["token"];
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     if (!decoded) response.unauthorized(res, "You are not authorized");
-    else next();
+    else {
+      req.user = decoded;
+      next();
+    };
   } catch (err) {
     console.log(err);
     response.unauthorized(res, "You are not authorized");

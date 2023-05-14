@@ -5,8 +5,9 @@ import morgan from "morgan";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import db from "./database/index.js";
-import models from "./models/index.js";
+import {models} from "./models/index.js";
 import seed from "./utils/seeders.js";
+import formidable from "./middlewares/formidable.js";
 
 dotenv.config();
 const port = process.env.PORT || 3000;

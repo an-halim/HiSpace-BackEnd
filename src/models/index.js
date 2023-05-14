@@ -5,29 +5,48 @@ import review from "./review.js";
 import facility from "./facility.js";
 import galery from "./galery.js";
 import menu from "./menu.js";
+import Conversation from "./coversation.js";
+import Chat from "./chat.js";
 
 const models = async () => {
 	await user.sync({
-		force: true,
+		alter: true,
 	});
 	await location.sync({
-		force: true,
+		alter: true,
 	});
 	await wishList.sync({
-		force: true,
+		alter: true,
 	});
 	await review.sync({
-		force: true,
+		alter: true,
 	});
 	await facility.sync({
-		force: true,
+		alter: true,
 	});
 	await galery.sync({
-		force: true,
+		alter: true,
 	});
 	await menu.sync({
-		force: true,
+		alter: true,
+	});
+	await Conversation.sync({
+		alter: true,
+	});
+	await Chat.sync({
+		alter: true,
 	});
 };
 
-export default models;
+export {
+	models,
+	user,
+	wishList,
+	location,
+	review,
+	facility,
+	galery,
+	menu,
+	Conversation,
+	Chat,
+};

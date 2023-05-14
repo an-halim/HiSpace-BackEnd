@@ -1,10 +1,13 @@
-import location from "../models/location.js";
-import review from "../models/review.js";
-import user from "../models/user.js";
-import menu from "../models/menu.js";
-import galery from "../models/galery.js";
-import facility from "../models/facility.js";
+import {
+	location,
+	review,
+	user,
+	menu,
+	galery,
+	facility,
+} from "../models/index.js";
 import { Op } from "sequelize";
+import cloudinary from "../services/cloudinary.js";
 
 const locationController = {
 	async createLocation(req, res) {
@@ -19,20 +22,44 @@ const locationController = {
 				description,
 				time,
 			} = req.body;
-			const newLocation = await location.create({
-				name,
-				address,
-				longitude,
-				latitude,
-				owner,
-				galeryId,
-				description,
-				time,
-			});
-			res.status(201).send({
-				message: "Location successfully created",
-				data: newLocation,
-			});
+
+			let uploadResult = [];
+
+			for (let key in req.files) {
+				const image = req.files[key];
+				await cloudinary.uploader.upload(image.filepath).then((result) => {
+					uploadResult.push(result.secure_url);
+				});
+			}
+
+			await location
+				.create({
+					name,
+					address,
+					longitude,
+					latitude,
+					owner,
+					galeryId,
+					description,
+					time,
+				})
+				.then((result) => {
+					uploadResult.map((image) => {
+						galery.create({
+							locationId: result.locationId,
+							locationLocationId: result.locationId,
+							imageUrl: image,
+						});
+					});
+					return result;
+				})
+				.then((result) => {
+					res.status(201).send({
+						status: "success",
+						message: "Location successfully created",
+						data: result,
+					});
+				});
 		} catch (error) {
 			console.log(error);
 			res.status(500).send({
@@ -40,8 +67,44 @@ const locationController = {
 			});
 		}
 	},
+	// 	try {
+	// 		const {
+	// 			name,
+	// 			address,
+	// 			longitude,
+	// 			latitude,
+	// 			owner,
+	// 			galeryId,
+	// 			description,
+	// 			time,
+	// 		} = req.body;
+	// 		const newLocation = await location.create({
+	// 			name,
+	// 			address,
+	// 			longitude,
+	// 			latitude,
+	// 			owner,
+	// 			galeryId,
+	// 			description,
+	// 			time,
+	// 		});
+	// 		res.status(201).send({
+	// 			message: "Location successfully created",
+	// 			data: newLocation,
+	// 		});
+	// 	} catch (error) {
+	// 		console.log(error);
+	// 		res.status(500).send({
+	// 			message: "Internal Server Error",
+	// 		});
+	// 	}
+	// },
 	async getAllLocation(req, res) {
 		console.log(req.query);
+		let page = Number(req?.query?.page) || 1;
+		let limit = Number(req?.query?.limit) || 5;
+		let offset = (page - 1) * limit;
+
 		if (req?.query?.tags) {
 			try {
 				const { tags } = req.query;
@@ -52,8 +115,21 @@ const locationController = {
 							[Op.like]: `%${tags}%`,
 						},
 					},
+					attributes: {
+						exclude: [
+							"longitude",
+							"latitude",
+							"owner",
+							"galeryId",
+							"description",
+							"createdAt",
+							"updatedAt",
+							"userUserId",
+						],
+					},
 				});
 				res.status(200).send({
+					status: "success",
 					message: "Get location by tags successfully",
 					data: locationByTags,
 				});
@@ -66,11 +142,24 @@ const locationController = {
 		} else {
 			try {
 				const allLocation = await location.findAll({
+					// pagination
+					limit: limit || null,
+					offset: offset || null,
 					attributes: {
-						exclude: ["createdAt", "updatedAt"],
+						exclude: [
+							"longitude",
+							"latitude",
+							"owner",
+							"galeryId",
+							"description",
+							"createdAt",
+							"updatedAt",
+							"userUserId",
+						],
 					},
 				});
 				res.status(200).send({
+					status: "success",
 					message: "Get all location successfully",
 					data: allLocation,
 				});
@@ -114,7 +203,13 @@ const locationController = {
 					{
 						model: galery,
 						attributes: {
-							exclude: ["createdAt", "updatedAt"],
+							exclude: [
+								"galeryId",
+								"locationId",
+								"locationLocationId",
+								"createdAt",
+								"updatedAt",
+							],
 						},
 					},
 					{
@@ -126,6 +221,7 @@ const locationController = {
 				],
 			});
 			res.status(200).send({
+				status: "success",
 				message: "Get location by id successfully",
 				data: locationById,
 			});
@@ -145,6 +241,7 @@ const locationController = {
 				},
 			});
 			res.status(200).send({
+				status: "success",
 				message: "Get location by owner successfully",
 				data: locationByOwner,
 			});
@@ -169,6 +266,67 @@ const locationController = {
 			res.status(200).send({
 				message: "Get location by tags successfully",
 				data: locationByTags,
+			});
+		} catch (error) {
+			console.log(error);
+			res.status(500).send({
+				message: "Internal Server Error",
+			});
+		}
+	},
+	async updateLocation(req, res) {
+		try {
+			const { locationId } = req.params;
+			const {
+				name,
+				address,
+				longitude,
+				latitude,
+				owner,
+				galeryId,
+				description,
+				time,
+			} = req.body;
+			const updateLocation = await location.update(
+				{
+					name,
+					address,
+					longitude,
+					latitude,
+					owner,
+					galeryId,
+					description,
+					time,
+				},
+				{
+					where: {
+						locationId,
+					},
+				}
+			);
+			res.status(200).send({
+				status: "success",
+				message: "Update location successfully",
+				data: updateLocation,
+			});
+		} catch (error) {
+			console.log(error);
+			res.status(500).send({
+				message: "Internal Server Error",
+			});
+		}
+	},
+	async deleteLocation(req, res) {
+		try {
+			const { locationId } = req.params;
+			const deleteLocation = await location.destroy({
+				where: {
+					locationId,
+				},
+			});
+			res.status(200).send({
+				message: "Delete location successfully",
+				data: deleteLocation,
 			});
 		} catch (error) {
 			console.log(error);

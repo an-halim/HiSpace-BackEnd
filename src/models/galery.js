@@ -21,7 +21,10 @@ const galery = db.define("galery", {
   freezeTableName: true,
 })
 
-galery.belongsTo(location);
+galery.belongsTo(location, {
+  foreignKey: "locationId",
+  as: "location",
+});
 location.hasMany(galery);
 
 export default galery;

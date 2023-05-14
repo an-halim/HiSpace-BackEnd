@@ -1,11 +1,7 @@
-import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-import User from "../models/user.js";
-import response from "../utils/response.js";
-import errorTracker from "../utils/sequelizeErr.js";
 import bcrypt from "bcrypt";
-import WishList from "../models/wishlist.js";
-import sendMail from "../services/mail.js";
+import { user as User, wishList } from "../models/index.js";
+import { sendMail, cloudinary } from "../services/index.js";
+import { response, errorTracker, jwt } from "../utils/index.js";
 
 /**
  *
@@ -20,23 +16,16 @@ const hash = (password) => {
 	return hash;
 };
 
-dotenv.config();
-
 const userController = {
 	regist: async (req, res) => {
 		try {
 			const data = req.body;
+			console.log(data);
 			data.password = hash(data.password);
 
 			User.create(data)
 				.then((result) => {
-					const token = jwt.sign(
-						{ email: result.email },
-						process.env.JWT_SECRET_KEY,
-						{
-							expiresIn: "1h",
-						}
-					);
+					const token = jwt({ email: result.email });
 					response.created(
 						res,
 						{
@@ -73,18 +62,7 @@ const userController = {
 				return response.unauthorized(res, "Wrong password");
 			}
 
-			const token = jwt.sign(
-				{ email: user.email },
-				process.env.JWT_SECRET_KEY,
-				{
-					expiresIn: "1h",
-				}
-			);
-
-			res.cookie("token", token, {
-				expiresIn: new Date(Date.now() + 3600000),
-				httpOnly: true,
-			});
+			const token = jwt({ email: user.email });
 
 			response.success(res, {
 				email: user.email,
@@ -99,17 +77,16 @@ const userController = {
 
 	detail: async (req, res) => {
 		try {
-			const userDetail = jwt.verify(
-				req.headers.authorization?.split(" ")[1] || req?.cookies["token"],
-				process.env.JWT_SECRET_KEY
-			);
+			const { email } = req.user;
 
 			User.findOne({
-				where: { email: userDetail.email },
-				attributes: { exclude: ["password"] },
+				where: { email: email },
+				attributes: {
+					exclude: ["password", "tempPassword", "createdAt", "updatedAt"],
+				},
 				include: [
 					{
-						model: WishList,
+						model: wishList,
 					},
 				],
 			})
@@ -128,21 +105,29 @@ const userController = {
 	updateDetail: async (req, res) => {
 		try {
 			let data = req.body;
-			const userDetail = jwt.verify(
-				req.headers.authorization?.split(" ")[1] || req?.cookies["token"],
-				process.env.JWT_SECRET_KEY
-			);
+			const { email } = req.user;
 
 			let user = User.findOne({
-				where: { email: userDetail.email },
+				where: { email: email },
 			});
 
 			if (!user) {
 				return response.notFound(res, "User not found");
 			}
 
+			let uploadResult = [];
+
+			for (let key in req.files) {
+				const image = req.files[key];
+				await cloudinary.uploader.upload(image.filepath).then((result) => {
+					uploadResult.push(result.secure_url);
+				});
+			}
+
+			data.profilePic = uploadResult[0];
+			data.email = email;
 			User.update(data, {
-				where: { email: userDetail.email },
+				where: { email: email },
 			})
 				.then((result) => {
 					response.success(res, "User has been updated");
