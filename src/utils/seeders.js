@@ -31,7 +31,8 @@ let seed = async () => {
 			},
 		])
 		.then((result) => {
-			console.log(result);
+			if (result) console.log("seeding data success");
+			else console.log("seeding data failed");
 		});
 };
 
