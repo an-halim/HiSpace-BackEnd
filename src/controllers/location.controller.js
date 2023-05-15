@@ -234,8 +234,15 @@ const locationController = {
 	},
 	async getLocationByOwner(req, res) {
 		try {
+			console.log(req.query);
+			let page = Number(req?.query?.page) || 1;
+			let limit = Number(req?.query?.limit) || 5;
+			let offset = (page - 1) * limit;
 			const { owner } = req.params;
 			const locationByOwner = await location.findAll({
+				// pagination
+				limit: limit || null,
+				offset: offset || null,
 				where: {
 					owner,
 				},
