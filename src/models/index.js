@@ -7,34 +7,37 @@ import galery from "./galery.js";
 import menu from "./menu.js";
 import Conversation from "./coversation.js";
 import Chat from "./chat.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const models = async () => {
 	await user.sync({
-		alter: true,
+		alter: process.env.ALTER_DB,
 	});
 	await location.sync({
-		alter: true,
+		alter: process.env.ALTER_DB,
 	});
 	await wishList.sync({
-		alter: true,
+		alter: process.env.ALTER_DB,
 	});
 	await review.sync({
-		alter: true,
+		alter: process.env.ALTER_DB,
 	});
 	await facility.sync({
-		alter: true,
+		alter: process.env.ALTER_DB,
 	});
 	await galery.sync({
-		alter: true,
+		alter: process.env.ALTER_DB,
 	});
 	await menu.sync({
-		alter: true,
+		alter: process.env.ALTER_DB,
 	});
 	await Conversation.sync({
-		alter: true,
+		alter: process.env.ALTER_DB,
 	});
 	await Chat.sync({
-		alter: true,
+		alter: process.env.ALTER_DB,
 	});
 };
 
