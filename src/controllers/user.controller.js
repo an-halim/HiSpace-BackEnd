@@ -25,7 +25,7 @@ const userController = {
 
 			User.create(data)
 				.then((result) => {
-					const token = jwt({ email: result.email });
+					const token = jwt({ email: result.email, userId : result.userId });
 					response.created(
 						res,
 						{
@@ -62,7 +62,7 @@ const userController = {
 				return response.unauthorized(res, "Wrong password");
 			}
 
-			const token = jwt({ email: user.email });
+			const token = jwt({ email: user.email, userId : result.userId });
 
 			response.success(res, {
 				email: user.email,

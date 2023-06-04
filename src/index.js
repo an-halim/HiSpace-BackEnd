@@ -25,7 +25,6 @@ try {
 		logging: false,
 	});
 	await models();
-	await seed();
 	console.log("Database connected");
 } catch (err) {
 	console.log(`Error: ${err}`);

@@ -1,10 +1,16 @@
 import db from "../database/index.js";
 import location from "./location.js";
+import randomId from "../utils/randomId.js";
+
+const random = new randomId(15)
 
 const facility = db.define("facility", {
   facilityId: {
     type: db.Sequelize.UUID,
-    defaultValue: db.Sequelize.UUIDV4,
+    defaultValue: () => {
+      const random = new randomId(15);
+      return random.generate();
+    },
     primaryKey: true,
   },
   locationId: {

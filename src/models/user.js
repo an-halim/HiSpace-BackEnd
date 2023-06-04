@@ -1,12 +1,16 @@
 import db from "../database/index.js";
 import { DataTypes } from "sequelize";
+import randomId from "../utils/randomId.js";
 
 const user = db.define(
 	"user",
 	{
 		userId: {
 			type: DataTypes.UUID,
-			defaultValue: DataTypes.UUIDV4,
+			defaultValue: () => {
+				const random = new randomId(15);
+				return random.generate();
+			},
 			primaryKey: true,
 		},
 		fullName: {

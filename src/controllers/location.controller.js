@@ -18,7 +18,6 @@ const locationController = {
 				longitude,
 				latitude,
 				owner,
-				galeryId,
 				description,
 				time,
 			} = req.body;
@@ -31,6 +30,7 @@ const locationController = {
 					uploadResult.push(result.secure_url);
 				});
 			}
+			
 
 			await location
 				.create({
@@ -39,7 +39,6 @@ const locationController = {
 					longitude,
 					latitude,
 					owner,
-					galeryId,
 					description,
 					time,
 				})
@@ -155,8 +154,22 @@ const locationController = {
 							"createdAt",
 							"updatedAt",
 							"userUserId",
+							"tags"
 						],
 					},
+					include: [
+						{
+							model: galery,
+							attributes: {
+								exclude: [
+									"locationId",
+									"locationLocationId",
+									"createdAt",
+									"updatedAt",
+								],
+							},
+						},
+					],
 				});
 				res.status(200).send({
 					status: "success",
@@ -185,7 +198,9 @@ const locationController = {
 					{
 						model: review,
 						attributes: {
-							exclude: ["createdAt", "updatedAt"],
+							exclude: [
+								"locationId", "locationLocationId",
+								"createdAt", "updatedAt"],
 						},
 					},
 					{
@@ -204,7 +219,6 @@ const locationController = {
 						model: galery,
 						attributes: {
 							exclude: [
-								"galeryId",
 								"locationId",
 								"locationLocationId",
 								"createdAt",

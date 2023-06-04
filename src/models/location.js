@@ -1,4 +1,5 @@
 import db from "../database/index.js";
+import randomId from "../utils/randomId.js";
 import user from "./user.js";
 import wishList from "./wishlist.js";
 
@@ -7,7 +8,10 @@ const location = db.define(
 	{
 		locationId: {
 			type: db.Sequelize.UUID,
-			defaultValue: db.Sequelize.UUIDV4,
+			defaultValue: () => {
+				const random = new randomId(15);
+				return random.generate();
+			},
 			primaryKey: true,
 		},
 		name: {
@@ -28,10 +32,6 @@ const location = db.define(
 		},
 		owner: {
 			type: db.Sequelize.STRING,
-			allowNull: false,
-		},
-		galeryId: {
-			type: db.Sequelize.UUID,
 			allowNull: false,
 		},
 		description: {

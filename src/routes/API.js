@@ -2,6 +2,7 @@ import express from "express";
 import {
 	userController as user,
 	locationController as location,
+	reviewController as review
 } from "../controllers/index.js";
 import authorize from "../middlewares/authorize.js";
 import formidable from "../middlewares/formidable.js";
@@ -22,7 +23,7 @@ router.post("/location", authorize, formidable, location.createLocation);
 router.get("/location", location.getAllLocation);
 router.get("/location/:locationId", location.getLocationById);
 
-
+router.post("/location/:locationId/review", authorize, review.createReview);
 
 // handle invalid route
 router.all("*", (req, res) => {
