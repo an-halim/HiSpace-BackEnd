@@ -1,7 +1,10 @@
 import bcrypt from "bcrypt";
-import { user as User, wishList } from "../models/index.js";
+import { user as User, wishList, location } from "../models/index.js";
 import { sendMail, cloudinary } from "../services/index.js";
 import { response, errorTracker, jwt } from "../utils/index.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 /**
  *
@@ -25,7 +28,7 @@ const userController = {
 
 			User.create(data)
 				.then((result) => {
-					const token = jwt({ email: result.email, userId : result.userId });
+					const token = jwt({ email: result.email, userId: result.userId });
 					response.created(
 						res,
 						{
@@ -62,7 +65,7 @@ const userController = {
 				return response.unauthorized(res, "Wrong password");
 			}
 
-			const token = jwt({ email: user.email, userId : result.userId });
+			const token = jwt({ email: user.email, userId: user.userId });
 
 			response.success(res, {
 				email: user.email,
@@ -71,6 +74,7 @@ const userController = {
 				accessToken: token,
 			});
 		} catch (err) {
+			console.log(err);
 			response.serverError(res, err);
 		}
 	},
@@ -171,7 +175,9 @@ const userController = {
 			let html = `<h1>Reset Password</h1>
 			<p>Hi ${user.fullName},</p>
 			<p>We have received a request to reset your password. If you did not make this request, simply ignore this email. Otherwise, please click the button below to reset your password:</p>
-			<a href="http://localhost:3000/reset-password/${randomPassword}">Reset Password</a>
+			<a href="${process.env.BASE_URL}/reset-password/${randomPassword}">Reset Password</a>
+			<p>If that does not work, please copy and paste the following link into your browser:</p>
+			<p>${process.env.BASE_URL}/reset-password/${randomPassword}</p>
 			<p>Thank you.</p>`;
 			let info = await sendMail(email, "Reset Password", html);
 

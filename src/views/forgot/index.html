@@ -57,8 +57,8 @@
 			const form = document.querySelector("form");
 			form.addEventListener("submit", (e) => {
 				e.preventDefault();
-        const rootUrl = window.location.origin;
-        const token = window.location.pathname.split("/")[2];
+				const rootUrl = window.location.origin;
+				const token = window.location.pathname.split("/")[2];
 				const password = document.querySelector("#password").value;
 				const confirmPassword =
 					document.querySelector("#confirmPassword").value;
@@ -85,6 +85,8 @@
 							toast.remove();
 						}, 3000);
 					});
+
+				
 			});
 		</script>
 	</body>

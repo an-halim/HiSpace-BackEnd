@@ -17,10 +17,17 @@ const locationController = {
 				address,
 				longitude,
 				latitude,
-				owner,
 				description,
 				time,
 			} = req.body;
+
+			const { email } = req.user;
+			
+			const owner = await user.findOne({
+				where: {
+					email,
+				},
+			});
 
 			let uploadResult = [];
 
@@ -38,7 +45,9 @@ const locationController = {
 					address,
 					longitude,
 					latitude,
-					owner,
+					owner: owner.fullName,
+					ownerEmail: owner.email,
+					userUserId: owner.userId,
 					description,
 					time,
 				})
@@ -116,8 +125,6 @@ const locationController = {
 					},
 					attributes: {
 						exclude: [
-							"longitude",
-							"latitude",
 							"owner",
 							"galeryId",
 							"description",
@@ -146,8 +153,6 @@ const locationController = {
 					offset: offset || null,
 					attributes: {
 						exclude: [
-							"longitude",
-							"latitude",
 							"owner",
 							"galeryId",
 							"description",
@@ -202,13 +207,7 @@ const locationController = {
 								"locationId", "locationLocationId",
 								"createdAt", "updatedAt"],
 						},
-					},
-					{
-						model: user,
-						attributes: {
-							exclude: ["createdAt", "updatedAt"],
-						},
-					},
+					},	
 					{
 						model: menu,
 						attributes: {
@@ -252,13 +251,13 @@ const locationController = {
 			let page = Number(req?.query?.page) || 1;
 			let limit = Number(req?.query?.limit) || 5;
 			let offset = (page - 1) * limit;
-			const { owner } = req.params;
+			const { owner } = req.query;
 			const locationByOwner = await location.findAll({
 				// pagination
 				limit: limit || null,
 				offset: offset || null,
 				where: {
-					owner,
+					ownerEmail: owner,
 				},
 			});
 			res.status(200).send({

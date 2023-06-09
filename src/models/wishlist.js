@@ -12,7 +12,7 @@ const wishList = db.define(
 			allowNull: false,
 		},
 		locationId: {
-			type: db.Sequelize.INTEGER,
+			type: db.Sequelize.UUID,
 			allowNull: false,
 		},
 	},

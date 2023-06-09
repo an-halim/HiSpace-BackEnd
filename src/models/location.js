@@ -34,6 +34,10 @@ const location = db.define(
 			type: db.Sequelize.STRING,
 			allowNull: false,
 		},
+		ownerEmail: {
+			type: db.Sequelize.STRING,
+			allowNull: false,
+		},
 		description: {
 			type: db.Sequelize.STRING,
 			allowNull: false,
@@ -44,10 +48,6 @@ const location = db.define(
 		},
 		rating: {
 			type: db.Sequelize.FLOAT,
-			allowNull: true,
-		},
-		tags: {
-			type: db.Sequelize.STRING,
 			allowNull: true,
 		},
 	},

@@ -1,5 +1,8 @@
 import express from 'express';
 import fs from 'fs';
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const router = express.Router();
 
@@ -9,7 +12,7 @@ router.get('/', (req, res) => {
 
 router.get('/reset-password/:code', (req, res) => {
 
-  fetch(`http://localhost:3000/api/verify-token/${req.params.code}`, {
+  fetch(`${process.env.BASE_URL}/api/verify-token/${req.params.code}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
