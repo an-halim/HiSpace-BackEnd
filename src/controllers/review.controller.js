@@ -5,8 +5,8 @@ const reviewController = {
 	async createReview(req, res) {
 		const { locationId } = req.params;
 		const { rating, comment } = req.body;
-		const { userId } = req.user
-		console.log(req.user)
+		const { userId } = req.user;
+		console.log(req.user);
 
 		try {
 			const locations = await location.findOne({
@@ -19,6 +19,20 @@ const reviewController = {
 				return res.status(404).send({
 					status: "failed",
 					message: "Location not found",
+				});
+			}
+
+			const checkReview = await review.findOne({
+				where: {
+					userId,
+					locationId,
+				},
+			});
+
+			if (checkReview) {
+				return res.status(400).send({
+					status: "failed",
+					message: "You already review this location",
 				});
 			}
 
