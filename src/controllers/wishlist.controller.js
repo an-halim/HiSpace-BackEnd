@@ -61,8 +61,10 @@ const wishListController = {
 				},
 			});
 
-			// only get location data
-			const data = result.map((item) => item.location);
+			// only get location data that user has and remove null data
+			const data = result
+				.map((item) => item.location)
+				.filter((item) => item !== null);
 
 			res.status(200).json({
 				status: "success",
