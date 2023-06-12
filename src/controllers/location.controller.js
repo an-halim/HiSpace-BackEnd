@@ -12,17 +12,11 @@ import cloudinary from "../services/cloudinary.js";
 const locationController = {
 	async createLocation(req, res) {
 		try {
-			const {
-				name,
-				address,
-				longitude,
-				latitude,
-				description,
-				time,
-			} = req.body;
+			const { name, address, longitude, latitude, description, time } =
+				req.body;
 
 			const { email } = req.user;
-			
+
 			const owner = await user.findOne({
 				where: {
 					email,
@@ -37,7 +31,6 @@ const locationController = {
 					uploadResult.push(result.secure_url);
 				});
 			}
-			
 
 			await location
 				.create({
@@ -159,7 +152,7 @@ const locationController = {
 							"createdAt",
 							"updatedAt",
 							"userUserId",
-							"tags"
+							"tags",
 						],
 					},
 					include: [
@@ -173,6 +166,10 @@ const locationController = {
 									"updatedAt",
 								],
 							},
+						},
+						{
+							model: menu,
+							attributes: ["menuId", "name", "price"],
 						},
 					],
 				});
@@ -204,10 +201,13 @@ const locationController = {
 						model: review,
 						attributes: {
 							exclude: [
-								"locationId", "locationLocationId",
-								"createdAt", "updatedAt"],
+								"locationId",
+								"locationLocationId",
+								"createdAt",
+								"updatedAt",
+							],
 						},
-					},	
+					},
 					{
 						model: menu,
 						attributes: {
@@ -252,19 +252,143 @@ const locationController = {
 			let limit = Number(req?.query?.limit) || 5;
 			let offset = (page - 1) * limit;
 			const { owner } = req.query;
-			const locationByOwner = await location.findAll({
-				// pagination
-				limit: limit || null,
-				offset: offset || null,
-				where: {
-					ownerEmail: owner,
-				},
-			});
-			res.status(200).send({
-				status: "success",
-				message: "Get location by owner successfully",
-				data: locationByOwner,
-			});
+			const { latitude, longitude } = req.query;
+			const { name } = req.query;
+			const { priceFrom, priceTo } = req.query;
+			const { facility } = req.query;
+
+			if (owner) {
+				const locationByOwner = await location.findAll({
+					// pagination
+					limit: limit || null,
+					offset: offset || null,
+					where: {
+						ownerEmail: owner,
+					},
+				});
+				locationByOwner.length > 0
+					? res.status(200).send({
+							status: "success",
+							message: "Get location by owner successfully",
+							data: locationByOwner,
+					  })
+					: res.status(404).send({
+							status: "failed",
+							message: "Location not found",
+					  });
+			} else if (latitude && longitude) {
+				const locationByLocation = await location.findAll({
+					// pagination
+					limit: limit || null,
+					offset: offset || null,
+					where: {
+						latitude: {
+							[Op.between]: [latitude - 0.5, Number(latitude) + 0.5],
+						},
+						longitude: {
+							[Op.between]: [longitude - 0.5, Number(longitude) + 0.5],
+						},
+					},
+				});
+
+				locationByLocation.length > 0
+					? res.status(200).send({
+							status: "success",
+							message: "Get location by location successfully",
+							data: locationByLocation,
+					  })
+					: res.status(404).send({
+							status: "failed",
+							message: "Location not found",
+					  });
+			} else if (name) {
+				const locationByName = await location.findAll({
+					// pagination
+					limit: limit || null,
+					offset: offset || null,
+					where: {
+						name: {
+							[Op.like]: `%${name}%`,
+						},
+					},
+				});
+
+				locationByName.length > 0
+					? res.status(200).send({
+							status: "success",
+							message: "Get location by name successfully",
+							data: locationByName,
+					  })
+					: res.status(404).send({
+							status: "failed",
+							message: "Location not found",
+					  });
+			} else if (priceFrom && priceTo) {
+				const locationByPrice = await location.findAll({
+					// pagination
+					limit: limit || null,
+					offset: offset || null,
+					include: [
+						{
+							model: menu,
+							attributes: {
+								exclude: ["createdAt", "updatedAt"],
+							},
+							where: {
+								price: {
+									[Op.between]: [priceFrom, priceTo],
+								},
+							},
+						},
+					],
+				});
+
+				locationByPrice.length > 0
+					? res.status(200).send({
+							status: "success",
+							message: "Get location by price successfully",
+							data: locationByPrice,
+					  })
+					: res.status(404).send({
+							status: "failed",
+							message: "Location not found",
+					  });
+			} else if (facility) {
+				const locationByFacility = await location.findAll({
+					// pagination
+					limit: limit || null,
+					offset: offset || null,
+					include: [
+						{
+							model: facility,
+							attributes: {
+								exclude: ["createdAt", "updatedAt"],
+							},
+							where: {
+								facility: {
+									[Op.like]: `%${facility}%`,
+								},
+							},
+						},
+					],
+				});
+
+				locationByFacility.length > 0
+					? res.status(200).send({
+							status: "success",
+							message: "Get location by facility successfully",
+							data: locationByFacility,
+					  })
+					: res.status(404).send({
+							status: "failed",
+							message: "Location not found",
+					  });
+			} else {
+				res.status(400).send({
+					status: "failed",
+					message: "Bad Request",
+				});
+			}
 		} catch (error) {
 			console.log(error);
 			res.status(500).send({
@@ -339,11 +463,36 @@ const locationController = {
 	async deleteLocation(req, res) {
 		try {
 			const { locationId } = req.params;
+			const { userId } = req.user;
+
+			// delete galery
+			const deleteGalery = await galery.destroy({
+				where: {
+					locationId,
+				},
+			});
+
+			// delete menu
+			const deleteMenu = await menu.destroy({
+				where: {
+					locationId,
+				},
+			});
+
+			// delete review
+			const deleteReview = await review.destroy({
+				where: {
+					locationId,
+				},
+			});
+
+			// delete location and relation table
 			const deleteLocation = await location.destroy({
 				where: {
 					locationId,
 				},
 			});
+
 			res.status(200).send({
 				message: "Delete location successfully",
 				data: deleteLocation,
