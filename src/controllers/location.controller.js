@@ -10,6 +10,7 @@ import {
 import { Op } from "sequelize";
 import sequelize from "sequelize";
 import cloudinary from "../services/cloudinary.js";
+import { calculateDistance } from "../utils/index.js";
 
 const locationController = {
 	async createLocation(req, res) {
@@ -157,46 +158,47 @@ const locationController = {
 		const { longitude, latitude } = req.query;
 		const { sortBy } = req.query;
 
-		if (longitude && latitude) {
-			// get location wich is near from user and has most favorite and rating
-			const result = await location.findAll({
-				// pagination
-				limit: limit || null,
-				offset: offset || null,
-				include: [
-					{
-						model: wishList,
-						attributes: [],
-					},
-					{
-						model: menu,
-						attributes: ["menuId", "name", "price"],
-					},
-					{
-						model: galery,
-						attributes: {
-							exclude: [
-								"locationId",
-								"locationLocationId",
-								"createdAt",
-								"updatedAt",
-							],
-						},
-					},
-				],
-				order: [["rating", "DESC"]],
-			});
+		// if (longitude && latitude) {
+		// 	// get location wich is near from user and has most favorite and rating
+		// 	const result = await location.findAll({
+		// 		// pagination
+		// 		limit: limit || null,
+		// 		offset: offset || null,
+		// 		include: [
+		// 			{
+		// 				model: wishList,
+		// 				attributes: [],
+		// 			},
+		// 			{
+		// 				model: menu,
+		// 				attributes: ["menuId", "name", "price"],
+		// 			},
+		// 			{
+		// 				model: galery,
+		// 				attributes: {
+		// 					exclude: [
+		// 						"locationId",
+		// 						"locationLocationId",
+		// 						"createdAt",
+		// 						"updatedAt",
+		// 					],
+		// 				},
+		// 			},
+		// 		],
+		// 		order: [["rating", "DESC"]],
+		// 	});
 
-			// only get location data that user has and remove null data
-			const data = result.map((item) => item);
+		// 	// only get location data that user has and remove null data
+		// 	const data = result.map((item) => item);
 
-			console.log(result);
+		// 	console.log(result);
 
-			res.status(200).json({
-				status: "success",
-				data: data,
-			});
-		} else if (sortBy) {
+		// 	res.status(200).json({
+		// 		status: "success",
+		// 		data: data,
+		// 	});
+		// } else
+		if (sortBy) {
 			switch (sortBy) {
 				case "rating":
 					const sortByRating = await location.findAll({
@@ -228,7 +230,7 @@ const locationController = {
 					});
 					res.status(200).send({
 						status: "success",
-						message: "Get all location successfully",
+						message: "Get all location by rating successfully",
 						data: sortByRating,
 					});
 					break;
@@ -277,9 +279,6 @@ const locationController = {
 						order: [[sequelize.literal("count"), "DESC"]],
 					});
 
-					console.log(groupFavorite);
-					// add favorite count to location data
-
 					// get location data
 					const locationData = await location.findAll({
 						// pagination
@@ -323,10 +322,140 @@ const locationController = {
 
 					res.status(200).send({
 						status: "success",
-						message: "Get all location successfully",
+						message: "Get all location by favorite successfully",
 						data: locationData,
 					});
 
+					break;
+				case "recommended":
+					// grouping favorite by location from zero
+					const favorite = await wishList.findAll({
+						attributes: [
+							"locationId",
+							[sequelize.fn("COUNT", sequelize.col("locationId")), "count"],
+						],
+						group: ["locationId"],
+						order: [[sequelize.literal("count"), "DESC"]],
+					});
+
+					// get location data
+					const locations = await location.findAll({
+						// pagination
+						limit: limit || null,
+						offset: offset || null,
+						include: [
+							{
+								model: wishList,
+								attributes: [],
+								where: {
+									locationId: favorite.map(
+										(item) => item.dataValues.locationId
+									),
+								},
+							},
+							{
+								model: menu,
+								attributes: ["menuId", "name", "price"],
+							},
+							{
+								model: galery,
+								attributes: {
+									exclude: [
+										"locationId",
+										"locationLocationId",
+										"createdAt",
+										"updatedAt",
+									],
+								},
+							},
+						],
+						order: [["rating", "DESC"]],
+					});
+
+					locations.map((item) => {
+						favorite.map((favorite) => {
+							if (item.locationId === favorite.dataValues.locationId) {
+								item.dataValues.favorite = favorite.dataValues.count;
+							}
+						});
+					});
+
+					const nearestLocation = locations.map((item) => {
+						return {
+							...item.dataValues,
+							distance: calculateDistance(
+								latitude,
+								longitude,
+								item.dataValues.latitude,
+								item.dataValues.longitude
+							),
+						};
+					});
+
+					nearestLocation.sort((a, b) => {
+						return a.distance - b.distance;
+					});
+
+					// sort location order by open to close for user timezone
+					// time format {"monday":{"open":"08:45","close":"00:00"},"tuesday":null,"wednesday":null,"thursday":null,"friday":null,"saturday":null,"sunday":null}'
+					const days = [
+						"sunday",
+						"monday",
+						"tuesday",
+						"wednesday",
+						"thursday",
+						"friday",
+						"saturday",
+					];
+					const day = days[new Date().getDay()];
+					const timeNow = new Date().toLocaleTimeString("en-US", {
+						hour12: false,
+						hour: "numeric",
+						minute: "numeric",
+					});
+
+					console.log(day);
+					console.log(timeNow);
+
+					// check if at this time location is open
+					const openLocation = nearestLocation.map((item) => {
+						try {
+							const time = JSON.parse(item.time);
+							console.log(time["monday"]);
+							console.log(
+								time["monday"].open < timeNow && time["monday"].close < timeNow
+							);
+
+							if (time[day].open < timeNow && time[day].close < timeNow) {
+								return {
+									...item,
+									isOpen: true,
+								};
+							} else {
+								return {
+									...item,
+									isOpen: false,
+								};
+							}
+						} catch (error) {
+							console.log(error);
+							return {
+								...item,
+								isOpen: false,
+							};
+						}
+					});
+
+					// sort location order by open to close for user timezone
+					const openLocationSort = openLocation.sort((a, b) => {
+						return a.isOpen - b.isOpen;
+					});
+
+					res.status(200).send({
+						status: "success",
+						message: "Get all recomended location successfully",
+						data: openLocationSort,
+					});
 					break;
 				default:
 					res.status(400).send({
@@ -383,6 +512,7 @@ const locationController = {
 			}
 		}
 	},
+
 	async getLocationById(req, res) {
 		try {
 			const { locationId } = req.params;
