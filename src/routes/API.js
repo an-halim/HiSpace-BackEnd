@@ -5,6 +5,7 @@ import {
 	reviewController as review,
 	wishListController as wishList,
 	menuController as menu,
+	facilityController as facility,
 } from "../controllers/index.js";
 import authorize from "../middlewares/authorize.js";
 import formidable from "../middlewares/formidable.js";
@@ -30,11 +31,39 @@ router.get("/location/search", location.getLocationByOwner);
 router.get("/location/:locationId", location.getLocationById);
 router.delete("/location/:locationId", authorize, location.deleteLocation);
 
-// add menu
+// menu
 router.post("/location/:locationId/menu", authorize, menu.addMenu);
 router.get("/location/:locationId/menu", menu.getAllMenu);
+router.put("/location/:locationId/menu/:menuId", authorize, menu.updateMenu);
+router.delete("/location/:locationId/menu/:menuId", authorize, menu.deleteMenu);
 
+// facility
+router.post("/location/:locationId/facility", authorize, facility.create);
+router.get("/location/:locationId/facility", facility.read);
+router.put(
+	"/location/:locationId/facility/:facilityId",
+	authorize,
+	facility.update
+);
+router.delete(
+	"/location/:locationId/facility/:facilityId",
+	authorize,
+	facility.delete
+);
+
+// image
+router.post(
+	"/location/:locationId/galery",
+	authorize,
+	formidable,
+	location.addGalery
+);
+
+// review
 router.post("/location/:locationId/review", authorize, review.createReview);
+router.get("/location/:locationId/review", authorize, review.getAllReview);
+router.put("/location/:locationId/review", authorize, review.updateReview);
+router.delete("/location/:locationId/review", authorize, review.deleteReview);
 
 // handle invalid route
 router.all("*", (req, res) => {
