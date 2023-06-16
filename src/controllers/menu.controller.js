@@ -83,24 +83,24 @@ const menuController = {
 			});
 		}
 	},
-	async updateReview(req, res) {
-		const { reviewId } = req.params;
-		const { rating, comment } = req.body;
+	async updateMenu(req, res) {
+		const { menuId } = req.params;
+		const { name, price } = req.body;
 		try {
 			await review.update(
 				{
-					rating,
-					comment,
+					name,
+					price,
 				},
 				{
 					where: {
-						reviewId,
+						menuId,
 					},
 				}
 			);
 			res.status(200).send({
 				status: "success",
-				message: "Review successfully updated",
+				message: "Menu successfully updated",
 			});
 		} catch (err) {
 			res.status(500).send({
@@ -109,18 +109,17 @@ const menuController = {
 			});
 		}
 	},
-	async deleteReview(req, res) {
-		const { reviewId } = req.params;
-
+	async deleteMenu(req, res) {
+		const { menuId } = req.params;
 		try {
-			await review.destroy({
+			await menu.destroy({
 				where: {
-					reviewId,
+					menuId,
 				},
 			});
 			res.status(200).send({
 				status: "success",
-				message: "Review successfully deleted",
+				message: "Menu successfully deleted",
 			});
 		} catch (err) {
 			res.status(500).send({
