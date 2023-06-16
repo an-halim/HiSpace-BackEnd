@@ -347,11 +347,11 @@ const locationController = {
 							{
 								model: wishList,
 								attributes: [],
-								where: {
-									locationId: favorite.map(
-										(item) => item.dataValues.locationId
-									),
-								},
+								// where: {
+								// 	locationId: favorite.map(
+								// 		(item) => item.dataValues.locationId
+								// 	),
+								// },
 							},
 							{
 								model: menu,
@@ -376,6 +376,8 @@ const locationController = {
 						favorite.map((favorite) => {
 							if (item.locationId === favorite.dataValues.locationId) {
 								item.dataValues.favorite = favorite.dataValues.count;
+							} else {
+								item.dataValues.favorite = 0;
 							}
 						});
 					});
@@ -414,18 +416,10 @@ const locationController = {
 						minute: "numeric",
 					});
 
-					console.log(day);
-					console.log(timeNow);
-
 					// check if at this time location is open
 					const openLocation = nearestLocation.map((item) => {
 						try {
 							const time = JSON.parse(item.time);
-							console.log(time["monday"]);
-							console.log(
-								time["monday"].open < timeNow && time["monday"].close < timeNow
-							);
-
 							if (time[day].open < timeNow && time[day].close < timeNow) {
 								return {
 									...item,
@@ -438,7 +432,6 @@ const locationController = {
 								};
 							}
 						} catch (error) {
-							console.log(error);
 							return {
 								...item,
 								isOpen: false,
@@ -449,6 +442,20 @@ const locationController = {
 					// sort location order by open to close for user timezone
 					const openLocationSort = openLocation.sort((a, b) => {
 						return a.isOpen - b.isOpen;
+					});
+
+					// add field menu startFrom: "lowest price menu to highest price menu"
+					openLocationSort.map((item) => {
+						try {
+							const menu = item.menus.sort((a, b) => {
+								return a.price - b.price;
+							});
+							item.startFrom = `${menu[0].price} - ${
+								menu[menu.length - 1].price
+							}`;
+						} catch (err) {
+							item.startFrom = 0;
+						}
 					});
 
 					res.status(200).send({
