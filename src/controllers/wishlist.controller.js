@@ -1,4 +1,4 @@
-import { wishList, location } from "../models/index.js";
+import { wishList, location, menu, galery } from "../models/index.js";
 
 const wishListController = {
 	create: async (req, res) => {
@@ -24,6 +24,21 @@ const wishListController = {
 				locationLocationId: locationId,
 			};
 
+			// prevent duplicate data
+			const checkData = await wishList.findOne({
+				where: {
+					locationId,
+					userUserId: userId,
+				},
+			});
+
+			if (checkData) {
+				return res.status(400).json({
+					status: "failed",
+					message: "location already in wishlist",
+				});
+			}
+
 			const result = await wishList.create(data);
 
 			if (result) {
@@ -46,6 +61,7 @@ const wishListController = {
 			let limit = Number(req?.query?.limit) || 5;
 			let offset = (page - 1) * limit;
 			const { userId } = req.user;
+
 			const result = await wishList.findAll({
 				// pagination
 				limit: limit || null,
@@ -58,6 +74,23 @@ const wishListController = {
 					attributes: {
 						exclude: ["createdAt", "updatedAt"],
 					},
+					include: [
+						{
+							model: galery,
+							attributes: {
+								exclude: [
+									"locationId",
+									"locationLocationId",
+									"createdAt",
+									"updatedAt",
+								],
+							},
+						},
+						{
+							model: menu,
+							attributes: ["menuId", "name", "price"],
+						},
+					],
 				},
 			});
 
@@ -82,6 +115,20 @@ const wishListController = {
 		try {
 			const { locationId } = req.params;
 			const { userId } = req.user;
+
+			const locationData = await wishList.findOne({
+				where: {
+					locationLocationId: locationId,
+					userUserId: userId,
+				},
+			});
+
+			if (!locationData) {
+				return res.status(404).json({
+					status: "failed",
+					message: "location not found",
+				});
+			}
 
 			const result = await wishList.destroy({
 				where: {
