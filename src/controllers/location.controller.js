@@ -5,8 +5,10 @@ import {
 	menu,
 	galery,
 	facility,
+	wishList,
 } from "../models/index.js";
 import { Op } from "sequelize";
+import sequelize from "sequelize";
 import cloudinary from "../services/cloudinary.js";
 
 const locationController = {
@@ -31,6 +33,8 @@ const locationController = {
 					uploadResult.push(result.secure_url);
 				});
 			}
+
+			console.log(owner);
 
 			await location
 				.create({
@@ -61,6 +65,51 @@ const locationController = {
 						data: result,
 					});
 				});
+		} catch (error) {
+			console.log(error);
+			res.status(500).send({
+				message: "Internal Server Error",
+			});
+		}
+	},
+	async addGalery(req, res) {
+		try {
+			const { locationId } = req.params;
+			const { email } = req.user;
+
+			const owner = await location.findOne({
+				where: {
+					locationId,
+					ownerEmail: email,
+				},
+			});
+
+			if (!owner) {
+				return res.status(400).send({
+					status: "failed",
+					message: "You are not the owner of this location",
+				});
+			}
+
+			let uploadResult = [];
+
+			for (let key in req.files) {
+				const image = req.files[key];
+				await cloudinary.uploader.upload(image.filepath).then((result) => {
+					uploadResult.push(result.secure_url);
+				});
+			}
+
+			const addGalery = await galery.create({
+				locationId,
+				locationLocationId: locationId,
+				imageUrl,
+			});
+			res.status(201).send({
+				status: "success",
+				message: "Galery successfully created",
+				data: addGalery,
+			});
 		} catch (error) {
 			console.log(error);
 			res.status(500).send({
@@ -105,38 +154,186 @@ const locationController = {
 		let page = Number(req?.query?.page) || 1;
 		let limit = Number(req?.query?.limit) || 5;
 		let offset = (page - 1) * limit;
+		const { longitude, latitude } = req.query;
+		const { sortBy } = req.query;
 
-		if (req?.query?.tags) {
-			try {
-				const { tags } = req.query;
-				console.log(req.query);
-				const locationByTags = await location.findAll({
-					where: {
-						tags: {
-							[Op.like]: `%${tags}%`,
+		if (longitude && latitude) {
+			// get location wich is near from user and has most favorite and rating
+			const result = await location.findAll({
+				// pagination
+				limit: limit || null,
+				offset: offset || null,
+				include: [
+					{
+						model: wishList,
+						attributes: [],
+					},
+					{
+						model: menu,
+						attributes: ["menuId", "name", "price"],
+					},
+					{
+						model: galery,
+						attributes: {
+							exclude: [
+								"locationId",
+								"locationLocationId",
+								"createdAt",
+								"updatedAt",
+							],
 						},
 					},
-					attributes: {
-						exclude: [
-							"owner",
-							"galeryId",
-							"description",
-							"createdAt",
-							"updatedAt",
-							"userUserId",
+				],
+				order: [["rating", "DESC"]],
+			});
+
+			// only get location data that user has and remove null data
+			const data = result.map((item) => item);
+
+			console.log(result);
+
+			res.status(200).json({
+				status: "success",
+				data: data,
+			});
+		} else if (sortBy) {
+			switch (sortBy) {
+				case "rating":
+					const sortByRating = await location.findAll({
+						// pagination
+						limit: limit || null,
+						offset: offset || null,
+						include: [
+							{
+								model: wishList,
+								attributes: [],
+							},
+							{
+								model: menu,
+								attributes: ["menuId", "name", "price"],
+							},
+							{
+								model: galery,
+								attributes: {
+									exclude: [
+										"locationId",
+										"locationLocationId",
+										"createdAt",
+										"updatedAt",
+									],
+								},
+							},
 						],
-					},
-				});
-				res.status(200).send({
-					status: "success",
-					message: "Get location by tags successfully",
-					data: locationByTags,
-				});
-			} catch (error) {
-				console.log(error);
-				res.status(500).send({
-					message: "Internal Server Error",
-				});
+						order: [["rating", "DESC"]],
+					});
+					res.status(200).send({
+						status: "success",
+						message: "Get all location successfully",
+						data: sortByRating,
+					});
+					break;
+					// case "price":
+					const sortByPrice = await location.findAll({
+						// pagination
+						limit: limit || null,
+						offset: offset || null,
+						include: [
+							{
+								model: wishList,
+								attributes: [],
+							},
+							{
+								model: menu,
+								attributes: ["menuId", "name", "price"],
+							},
+							{
+								model: galery,
+								attributes: {
+									exclude: [
+										"locationId",
+										"locationLocationId",
+										"createdAt",
+										"updatedAt",
+									],
+								},
+							},
+						],
+						order: [["price", "DESC"]],
+					});
+					res.status(200).send({
+						status: "success",
+						message: "Get all location successfully",
+						data: sortByPrice,
+					});
+					break;
+				case "favorite":
+					// grouping favorite by location
+					const groupFavorite = await wishList.findAll({
+						attributes: [
+							"locationId",
+							[sequelize.fn("COUNT", sequelize.col("locationId")), "count"],
+						],
+						group: ["locationId"],
+						order: [[sequelize.literal("count"), "DESC"]],
+					});
+
+					console.log(groupFavorite);
+					// add favorite count to location data
+
+					// get location data
+					const locationData = await location.findAll({
+						// pagination
+						limit: limit || null,
+						offset: offset || null,
+						include: [
+							{
+								model: wishList,
+								attributes: [],
+								where: {
+									locationId: groupFavorite.map(
+										(item) => item.dataValues.locationId
+									),
+								},
+							},
+							{
+								model: menu,
+								attributes: ["menuId", "name", "price"],
+							},
+							{
+								model: galery,
+								attributes: {
+									exclude: [
+										"locationId",
+										"locationLocationId",
+										"createdAt",
+										"updatedAt",
+									],
+								},
+							},
+						],
+					});
+
+					locationData.map((item) => {
+						groupFavorite.map((favorite) => {
+							if (item.locationId === favorite.dataValues.locationId) {
+								item.dataValues.favorite = favorite.dataValues.count;
+							}
+						});
+					});
+
+					res.status(200).send({
+						status: "success",
+						message: "Get all location successfully",
+						data: locationData,
+					});
+
+					break;
+				default:
+					res.status(400).send({
+						status: "failed",
+						message: "Bad Request",
+					});
+					break;
 			}
 		} else {
 			try {
@@ -228,7 +425,12 @@ const locationController = {
 					{
 						model: facility,
 						attributes: {
-							exclude: ["createdAt", "updatedAt"],
+							exclude: [
+								"createdAt",
+								"updatedAt",
+								"locationId",
+								"locationLocationId",
+							],
 						},
 					},
 				],
@@ -486,6 +688,13 @@ const locationController = {
 				},
 			});
 
+			// delete wishlist
+			const deleteWishlist = await wishList.destroy({
+				where: {
+					locationId,
+				},
+			});
+
 			// delete location and relation table
 			const deleteLocation = await location.destroy({
 				where: {
@@ -494,8 +703,11 @@ const locationController = {
 			});
 
 			res.status(200).send({
-				message: "Delete location successfully",
-				data: deleteLocation,
+				message:
+					deleteLocation > 0
+						? "Delete location successfully"
+						: "Location not found",
+				data: deleteLocation > 0 ? deleteLocation : null,
 			});
 		} catch (error) {
 			console.log(error);
