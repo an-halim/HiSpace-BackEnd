@@ -1,5 +1,10 @@
 import bcrypt from "bcrypt";
-import { user as User, wishList, location } from "../models/index.js";
+import {
+	user as User,
+	wishList,
+	location,
+	Conversation,
+} from "../models/index.js";
 import { sendMail, cloudinary } from "../services/index.js";
 import { response, errorTracker, jwt } from "../utils/index.js";
 import dotenv from "dotenv";
@@ -92,12 +97,19 @@ const userController = {
 					{
 						model: wishList,
 					},
+					{
+						model: location,
+					},
+					{
+						model: Conversation,
+					},
 				],
 			})
 				.then((result) => {
 					response.success(res, result);
 				})
 				.catch((err) => {
+					console.log(err);
 					response.failed(res, err);
 				});
 		} catch (err) {

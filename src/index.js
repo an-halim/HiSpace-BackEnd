@@ -14,7 +14,7 @@ const port = process.env.PORT || 3000;
 
 const app = express();
 
-app.use(express.static("views"));
+app.use(express.static("src/build"));
 app.use(morgan("dev"));
 app.use(helmet());
 app.use(express.json());
@@ -25,6 +25,7 @@ try {
 		logging: false,
 	});
 	await models();
+
 	console.log("Database connected");
 } catch (err) {
 	console.log(`Error: ${err}`);
