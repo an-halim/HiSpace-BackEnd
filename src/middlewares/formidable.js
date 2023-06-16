@@ -8,11 +8,13 @@ export default (req, res, next) => {
 			next(err);
 			return;
 		}
+
 		// if file extension is not an image
 		if (files.image) {
-			const { type } = files.image;
-			const split = type.split("/");
-			const extension = split[1].toLowerCase();
+			const extension = files.image.originalFilename
+				.split(".")[1]
+				.toLowerCase();
+			console.log(extension);
 
 			if (extension !== "png" && extension !== "jpg" && extension !== "jpeg") {
 				const error = {
