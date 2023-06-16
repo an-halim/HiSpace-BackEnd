@@ -22,5 +22,6 @@ Conversation.belongsTo(User, {
 	foreignKey: "user_id",
 	as: "user",
 });
+User.hasMany(Conversation);
 
 export default Conversation;
