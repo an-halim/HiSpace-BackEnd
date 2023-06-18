@@ -759,39 +759,69 @@ const locationController = {
 	},
 	async updateLocation(req, res) {
 		try {
+			const { name, address, longitude, latitude, description, time } =
+				req.body;
 			const { locationId } = req.params;
-			const {
-				name,
-				address,
-				longitude,
-				latitude,
-				owner,
-				galeryId,
-				description,
-				time,
-			} = req.body;
-			const updateLocation = await location.update(
-				{
-					name,
-					address,
-					longitude,
-					latitude,
-					owner,
-					galeryId,
-					description,
-					time,
+			const { email } = req.user;
+
+			const owner = await user.findOne({
+				where: {
+					email,
 				},
-				{
-					where: {
-						locationId,
-					},
-				}
-			);
-			res.status(200).send({
-				status: "success",
-				message: "Update location successfully",
-				data: updateLocation,
 			});
+
+			let uploadResult = [];
+
+			for (let key in req.files) {
+				const image = req.files[key];
+				await cloudinary.uploader.upload(image.filepath).then((result) => {
+					uploadResult.push(result.secure_url);
+				});
+			}
+
+			await location
+				.update(
+					{
+						name,
+						address,
+						longitude,
+						latitude,
+						owner: owner.fullName,
+						ownerEmail: owner.email,
+						userUserId: owner.userId,
+						description,
+						time,
+					},
+					{
+						where: {
+							locationId,
+							userUserId: owner.userId,
+						},
+					}
+				)
+				.then((result) => {
+					uploadResult.map((image) => {
+						galery.create({
+							locationId: result.locationId,
+							locationLocationId: result.locationId,
+							imageUrl: image,
+						});
+					});
+					return result;
+				})
+				.then((result) => {
+					if (result[0]) {
+						res.status(200).send({
+							status: "success",
+							message: "Location successfully updated",
+						});
+					} else {
+						res.status(404).send({
+							status: "failed",
+							message: "Location not found",
+						});
+					}
+				});
 		} catch (error) {
 			console.log(error);
 			res.status(500).send({

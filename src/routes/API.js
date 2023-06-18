@@ -29,6 +29,12 @@ router.post("/location", authorize, formidable, location.createLocation);
 router.get("/location", location.getAllLocation);
 router.get("/location/search", location.getLocationByOwner);
 router.get("/location/:locationId", location.getLocationById);
+router.put(
+	"/location/:locationId",
+	authorize,
+	formidable,
+	location.updateLocation
+);
 router.delete("/location/:locationId", authorize, location.deleteLocation);
 
 // menu
