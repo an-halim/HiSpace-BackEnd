@@ -39,7 +39,7 @@ const location = db.define(
 			allowNull: false,
 		},
 		description: {
-			type: db.Sequelize.STRING,
+			type: db.Sequelize.TEXT("long"),
 			allowNull: false,
 		},
 		time: {

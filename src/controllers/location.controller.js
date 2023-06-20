@@ -35,8 +35,6 @@ const locationController = {
 				});
 			}
 
-			console.log(owner);
-
 			await location
 				.create({
 					name,
@@ -67,9 +65,9 @@ const locationController = {
 					});
 				});
 		} catch (error) {
-			console.log(error);
+			console.log(error.message);
 			res.status(500).send({
-				message: "Internal Server Error",
+				message: error,
 			});
 		}
 	},
@@ -158,46 +156,6 @@ const locationController = {
 		const { longitude, latitude } = req.query;
 		const { sortBy } = req.query;
 
-		// if (longitude && latitude) {
-		// 	// get location wich is near from user and has most favorite and rating
-		// 	const result = await location.findAll({
-		// 		// pagination
-		// 		limit: limit || null,
-		// 		offset: offset || null,
-		// 		include: [
-		// 			{
-		// 				model: wishList,
-		// 				attributes: [],
-		// 			},
-		// 			{
-		// 				model: menu,
-		// 				attributes: ["menuId", "name", "price"],
-		// 			},
-		// 			{
-		// 				model: galery,
-		// 				attributes: {
-		// 					exclude: [
-		// 						"locationId",
-		// 						"locationLocationId",
-		// 						"createdAt",
-		// 						"updatedAt",
-		// 					],
-		// 				},
-		// 			},
-		// 		],
-		// 		order: [["rating", "DESC"]],
-		// 	});
-
-		// 	// only get location data that user has and remove null data
-		// 	const data = result.map((item) => item);
-
-		// 	console.log(result);
-
-		// 	res.status(200).json({
-		// 		status: "success",
-		// 		data: data,
-		// 	});
-		// } else
 		if (sortBy) {
 			switch (sortBy) {
 				case "rating":
@@ -228,10 +186,16 @@ const locationController = {
 						],
 						order: [["rating", "DESC"]],
 					});
+
+					// remove location with 0 rating
+					const removeZeroRating = sortByRating.filter(
+						(item) => item.rating !== 0 && item.rating !== null
+					);
+
 					res.status(200).send({
 						status: "success",
 						message: "Get all location by rating successfully",
-						data: sortByRating,
+						data: removeZeroRating,
 					});
 					break;
 					// case "price":
@@ -394,9 +358,10 @@ const locationController = {
 						};
 					});
 
-					nearestLocation.sort((a, b) => {
-						return a.distance - b.distance;
-					});
+					// get location about 20km from user
+					const nearestLocationFilter = nearestLocation.filter(
+						(item) => item.distance <= 20
+					);
 
 					// sort location order by open to close for user timezone
 					// time format {"monday":{"open":"08:45","close":"00:00"},"tuesday":null,"wednesday":null,"thursday":null,"friday":null,"saturday":null,"sunday":null}'
@@ -417,7 +382,7 @@ const locationController = {
 					});
 
 					// check if at this time location is open
-					const openLocation = nearestLocation.map((item) => {
+					const openLocation = nearestLocationFilter.map((item) => {
 						try {
 							const time = JSON.parse(item.time);
 							if (time[day].open < timeNow && time[day].close < timeNow) {
@@ -450,6 +415,7 @@ const locationController = {
 							const menu = item.menus.sort((a, b) => {
 								return a.price - b.price;
 							});
+							// convert price to string format K
 							item.startFrom = `${menu[0].price} - ${
 								menu[menu.length - 1].price
 							}`;
@@ -506,6 +472,62 @@ const locationController = {
 						},
 					],
 				});
+
+				const days = [
+					"sunday",
+					"monday",
+					"tuesday",
+					"wednesday",
+					"thursday",
+					"friday",
+					"saturday",
+				];
+				const day = days[new Date().getDay()];
+				const timeNow = new Date().toLocaleTimeString("en-US", {
+					hour12: false,
+					hour: "numeric",
+					minute: "numeric",
+				});
+
+				// check if at this time location is open
+				allLocation.map((item) => {
+					try {
+						const time = JSON.parse(item.time);
+						if (time[day].open < timeNow && time[day].close < timeNow) {
+							return {
+								...item,
+								isOpen: true,
+							};
+						} else {
+							return {
+								...item,
+								isOpen: false,
+							};
+						}
+					} catch (error) {
+						return {
+							...item,
+							isOpen: false,
+						};
+					}
+				});
+
+				// add field menu startFrom: "lowest price menu to highest price menu"
+				allLocation.map((item) => {
+					try {
+						const menu = item.menus.sort((a, b) => {
+							return a.price - b.price;
+						});
+						// convert price to string format K
+						// change if 1000 to 1k
+						return (item.startFrom = `${menu[0].price} - ${
+							menu[menu.length - 1].price
+						}`);
+					} catch (err) {
+						return (item.startFrom = 0);
+					}
+				});
+
 				res.status(200).send({
 					status: "success",
 					message: "Get all location successfully",
@@ -534,13 +556,16 @@ const locationController = {
 					{
 						model: review,
 						attributes: {
-							exclude: [
-								"locationId",
-								"locationLocationId",
-								"createdAt",
-								"updatedAt",
-							],
+							exclude: ["locationId", "locationLocationId", "updatedAt"],
 						},
+						include: [
+							{
+								model: user,
+								attributes: {
+									exclude: ["createdAt", "updatedAt", "password", "userId"],
+								},
+							},
+						],
 					},
 					{
 						model: menu,
@@ -604,6 +629,34 @@ const locationController = {
 					where: {
 						ownerEmail: owner,
 					},
+					attributes: {
+						exclude: [
+							"owner",
+							"galeryId",
+							"description",
+							"createdAt",
+							"updatedAt",
+							"userUserId",
+							"tags",
+						],
+					},
+					include: [
+						{
+							model: galery,
+							attributes: {
+								exclude: [
+									"locationId",
+									"locationLocationId",
+									"createdAt",
+									"updatedAt",
+								],
+							},
+						},
+						{
+							model: menu,
+							attributes: ["menuId", "name", "price"],
+						},
+					],
 				});
 				locationByOwner.length > 0
 					? res.status(200).send({

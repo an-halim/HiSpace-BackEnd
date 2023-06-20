@@ -41,7 +41,20 @@ const models = async () => {
 	});
 };
 
+const dropAll = async () => {
+	await review.drop();
+	await wishList.drop();
+	await facility.drop();
+	await galery.drop();
+	await menu.drop();
+	await Chat.drop();
+	await Conversation.drop();
+	await location.drop();
+	await user.drop();
+};
+
 export {
+	dropAll,
 	models,
 	user,
 	wishList,
