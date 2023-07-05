@@ -1,4 +1,4 @@
-import { wishList, location, menu, galery } from "../models/index.js";
+import { wishList, location, menu, galery, facility } from "../models/index.js";
 
 const wishListController = {
 	create: async (req, res) => {
@@ -72,7 +72,15 @@ const wishListController = {
 				include: {
 					model: location,
 					attributes: {
-						exclude: ["createdAt", "updatedAt"],
+						exclude: [
+							"owner",
+							"galeryId",
+							"description",
+							"createdAt",
+							"updatedAt",
+							"userUserId",
+							"tags",
+						],
 					},
 					include: [
 						{
@@ -89,6 +97,10 @@ const wishListController = {
 						{
 							model: menu,
 							attributes: ["menuId", "name", "price"],
+						},
+						{
+							model: facility,
+							attributes: ["facilityId", "name"],
 						},
 					],
 				},

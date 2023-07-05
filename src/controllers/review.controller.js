@@ -89,13 +89,25 @@ const reviewController = {
 				where: {
 					locationId,
 				},
-				include: [
-					{
-						model: user,
-						attributes: ["name", "email", "phone", "avatar"],
-					},
-				],
+				attributes: ["userId", "reviewId", "rating", "comment", "createdAt"],
 			});
+
+			// find user and add to review
+			const users = await user.findAll({
+				where: {
+					userId: {
+						[Op.in]: reviews.map((item) => item.userId),
+					},
+				},
+				attributes: ["userId", "fullName", "email", "profilePic"],
+			});
+
+			// push user to review
+			reviews.map((item) => {
+				const user = users.find((user) => user.userId === item.userId);
+				return (item.dataValues.user = user);
+			});
+
 			res.status(200).send({
 				status: "success",
 				message: "Reviews successfully fetched",

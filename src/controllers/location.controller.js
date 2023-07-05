@@ -149,12 +149,12 @@ const locationController = {
 	// 	}
 	// },
 	async getAllLocation(req, res) {
-		console.log(req.query);
 		let page = Number(req?.query?.page) || 1;
 		let limit = Number(req?.query?.limit) || 5;
 		let offset = (page - 1) * limit;
 		const { longitude, latitude } = req.query;
 		const { sortBy } = req.query;
+		const { userId } = req.user;
 
 		if (sortBy) {
 			switch (sortBy) {
@@ -192,10 +192,26 @@ const locationController = {
 						(item) => item.rating !== 0 && item.rating !== null
 					);
 
+					const priceFrom = removeZeroRating.map((item) => {
+						try {
+							const menu = item.menus.sort((a, b) => {
+								return a.price - b.price;
+							});
+
+							item.startFrom = `${menu[0].price} - ${
+								menu[menu.length - 1].price
+							}`;
+							return item;
+						} catch (err) {
+							item.startFrom = 0;
+							return item;
+						}
+					});
+
 					res.status(200).send({
 						status: "success",
 						message: "Get all location by rating successfully",
-						data: removeZeroRating,
+						data: priceFrom,
 					});
 					break;
 					// case "price":
@@ -226,12 +242,12 @@ const locationController = {
 						],
 						order: [["price", "DESC"]],
 					});
-					res.status(200).send({
-						status: "success",
-						message: "Get all location successfully",
-						data: sortByPrice,
-					});
-					break;
+				// res.status(200).send({
+				// 	status: "success",
+				// 	message: "Get all location successfully",
+				// 	data: sortByPrice,
+				// });
+				// break;
 				case "favorite":
 					// grouping favorite by location
 					const groupFavorite = await wishList.findAll({
@@ -424,6 +440,23 @@ const locationController = {
 						}
 					});
 
+					// check if on wishlist
+					const wish = await wishList.findAll({
+						where: {
+							userUserId: userId,
+						},
+					});
+
+					openLocationSort.map((item) => {
+						wish.map((wish) => {
+							if (item.locationId === wish.locationId) {
+								return (item.isWish = true);
+							} else {
+								return (item.isWish = false);
+							}
+						});
+					});
+
 					res.status(200).send({
 						status: "success",
 						message: "Get all recomended location successfully",
@@ -556,16 +589,13 @@ const locationController = {
 					{
 						model: review,
 						attributes: {
-							exclude: ["locationId", "locationLocationId", "updatedAt"],
+							exclude: [
+								"locationId",
+								"locationLocationId",
+								"updatedAt",
+								"userUserId",
+							],
 						},
-						include: [
-							{
-								model: user,
-								attributes: {
-									exclude: ["createdAt", "updatedAt", "password", "userId"],
-								},
-							},
-						],
 					},
 					{
 						model: menu,
@@ -595,8 +625,35 @@ const locationController = {
 							],
 						},
 					},
+					{
+						model: user,
+						attributes: ["userId", "fullName", "email", "profilePic"],
+					},
 				],
 			});
+
+			await user
+				.findAll({
+					where: {
+						userId: {
+							[Op.in]: locationById.reviews.map((item) => item.userId),
+						},
+					},
+				})
+				.then((result) => {
+					locationById.reviews.map((item) => {
+						let user = result.find((user) => user.userId === item.userId);
+						// replace password
+						user = {
+							userId: user.userId,
+							fullName: user.fullName,
+							email: user.email,
+							profilePic: user.profilePic,
+						};
+						return (item.dataValues.user = user);
+					});
+				});
+
 			res.status(200).send({
 				status: "success",
 				message: "Get location by id successfully",
@@ -605,13 +662,12 @@ const locationController = {
 		} catch (error) {
 			console.log(error);
 			res.status(500).send({
-				message: "Internal Server Error",
+				message: error.message,
 			});
 		}
 	},
 	async getLocationByOwner(req, res) {
 		try {
-			console.log(req.query);
 			let page = Number(req?.query?.page) || 1;
 			let limit = Number(req?.query?.limit) || 5;
 			let offset = (page - 1) * limit;
@@ -655,6 +711,10 @@ const locationController = {
 						{
 							model: menu,
 							attributes: ["menuId", "name", "price"],
+						},
+						{
+							model: user,
+							attributes: ["fullName", "email", "profilepic"],
 						},
 					],
 				});
@@ -791,7 +851,6 @@ const locationController = {
 	async getLocationByTags(req, res) {
 		try {
 			const { tags } = req.query;
-			console.log(req.query);
 			const locationByTags = await location.findAll({
 				where: {
 					tags: {
@@ -852,7 +911,14 @@ const locationController = {
 						},
 					}
 				)
-				.then((result) => {
+				.then(async (result) => {
+					// delete old image
+					await galery.destroy({
+						where: {
+							locationId,
+						},
+					});
+
 					uploadResult.map((image) => {
 						galery.create({
 							locationId: result.locationId,

@@ -26,9 +26,9 @@ router.delete("/user/wishlist/:locationId", authorize, wishList.delete);
 
 // location
 router.post("/location", authorize, formidable, location.createLocation);
-router.get("/location", location.getAllLocation);
-router.get("/location/search", location.getLocationByOwner);
-router.get("/location/:locationId", location.getLocationById);
+router.get("/location", authorize, location.getAllLocation);
+router.get("/location/search", authorize, location.getLocationByOwner);
+router.get("/location/:locationId", authorize, location.getLocationById);
 router.put(
 	"/location/:locationId",
 	authorize,

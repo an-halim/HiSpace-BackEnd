@@ -176,7 +176,8 @@ const userController = {
 			});
 		}
 
-		const randomPassword = Math.random().toString(36).slice(-16);
+		const randomPassword = jwt({ email: email, userId: user.userId });
+
 		try {
 			await User.update(
 				{ tempPassword: randomPassword },
@@ -184,13 +185,80 @@ const userController = {
 			);
 
 			// please visit
-			let html = `<h1>Reset Password</h1>
-			<p>Hi ${user.fullName},</p>
-			<p>We have received a request to reset your password. If you did not make this request, simply ignore this email. Otherwise, please click the button below to reset your password:</p>
-			<a href="${process.env.BASE_URL}/reset-password/${randomPassword}">Reset Password</a>
-			<p>If that does not work, please copy and paste the following link into your browser:</p>
-			<p>${process.env.BASE_URL}/reset-password/${randomPassword}</p>
-			<p>Thank you.</p>`;
+			let html = `<!DOCTYPE html>
+			<html lang="en">
+				<head>
+					<meta charset="UTF-8" />
+					<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+					<title>Reset Password</title>
+					<style>
+						body {
+							font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+							background-color: #f5f5f5;
+							margin: 0;
+							padding: 0;
+						}
+			
+						.container {
+							max-width: 600px;
+							margin: 20px auto;
+							padding: 20px;
+							background-color: #ffffff;
+							border-radius: 10px;
+							box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+						}
+			
+						h1 {
+							font-size: 32px;
+							color: #333333;
+							margin-top: 0;
+						}
+			
+						p {
+							font-size: 18px;
+							color: #555555;
+							line-height: 1.6;
+						}
+			
+						a.button {
+							display: inline-block;
+							padding: 12px 24px;
+							background-color: #4285f4;
+							color: #ffffff;
+							text-decoration: none;
+							border-radius: 30px;
+							font-size: 20px;
+							transition: background-color 0.3s ease;
+						}
+			
+						a.button:hover {
+							background-color: #3367d6;
+						}
+					</style>
+				</head>
+				<body>
+					<div class="container">
+						<p>Hi ${user.fullName},</p>
+						<p>
+							We have received a request to reset your password. If you did not make
+							this request, simply ignore this email. Otherwise, please click the
+							button below to reset your password:
+						</p>
+						<a
+							class="button"
+							href="${process.env.BASE_URL}/reset-password/${randomPassword}"
+							>Reset Password</a
+						>
+						<p>
+							If that does not work, please copy and paste the following link into
+							your browser:
+						</p>
+						<p>${process.env.BASE_URL}/reset-password/${randomPassword}</p>
+						<p>Thank you.</p>
+					</div>
+				</body>
+			</html>
+			`;
 			let info = await sendMail(email, "Reset Password", html);
 
 			console.log("[SERVER] Message sent: %s", info.messageId, info.accepted);
@@ -211,7 +279,9 @@ const userController = {
 			}
 
 			User.findOne({
-				where: { tempPassword: token },
+				where: {
+					tempPassword: token,
+				},
 			})
 				.then((result) => {
 					if (!result) {

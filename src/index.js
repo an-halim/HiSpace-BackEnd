@@ -5,26 +5,34 @@ import morgan from "morgan";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import db from "./database/index.js";
-import { models } from "./models/index.js";
+import { dropAll, models } from "./models/index.js";
 import seed from "./utils/seeders.js";
 import formidable from "./middlewares/formidable.js";
+import cors from "cors";
 
 dotenv.config();
 const port = process.env.PORT || 3000;
 
 const app = express();
 
+app.use(
+	cors({
+		origin: "*",
+		methods: ["GET", "POST", "PUT", "DELETE"],
+	})
+);
 app.use(express.static("src/build"));
 app.use(morgan("dev"));
-app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 try {
+	console.log("Connecting to database...");
 	await db.authenticate({
 		logging: false,
 	});
-	await models();
+	// await models();
+	// await dropAll();
 
 	console.log("Database connected");
 } catch (err) {

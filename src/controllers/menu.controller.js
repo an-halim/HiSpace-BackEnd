@@ -87,7 +87,7 @@ const menuController = {
 		const { menuId } = req.params;
 		const { name, price } = req.body;
 		try {
-			await review.update(
+			await menu.update(
 				{
 					name,
 					price,
