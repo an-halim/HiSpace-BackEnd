@@ -21,7 +21,7 @@ jobs:
           port: 22
           script: |
             cd ~/app/HiSpace-BackEnd
-            git pull origin master
+            git pull origin master 
             git status
             yarn install
             pm2 reload hispace
