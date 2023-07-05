@@ -12,10 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install Yarn
-        run: npm install -g yarn
-      - name: Install pm2
-        run: npm install -g pm2 
       - name: Deploy Using ssh
         uses: appleboy/ssh-action@master
         with:
@@ -27,9 +23,6 @@ jobs:
             cd ~/app/HiSpace-BackEnd
             git pull origin master 
             git status
-            ls -la
-            npm install -g yarn
-            npm install -g pm2 
             yarn install
             pm2 reload hispace
             pm2 restart hispace

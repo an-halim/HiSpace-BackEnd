@@ -718,6 +718,7 @@ const locationController = {
 						},
 					],
 				});
+
 				locationByOwner.length > 0
 					? res.status(200).send({
 							status: "success",
@@ -763,18 +764,92 @@ const locationController = {
 							[Op.like]: `%${name}%`,
 						},
 					},
+					include: [
+						{
+							model: galery,
+							attributes: {
+								exclude: [
+									"locationId",
+									"locationLocationId",
+									"createdAt",
+									"updatedAt",
+								],
+							},
+						},
+						{
+							model: menu,
+							attributes: ["menuId", "name", "price"],
+						},
+					],
 				});
 
-				locationByName.length > 0
-					? res.status(200).send({
-							status: "success",
-							message: "Get location by name successfully",
-							data: locationByName,
-					  })
-					: res.status(404).send({
-							status: "failed",
-							message: "Location not found",
-					  });
+				if (locationByName.length === 0) {
+					return res.status(404).send({
+						status: "failed",
+						message: "Location not found",
+					});
+				}
+
+				const days = [
+					"sunday",
+					"monday",
+					"tuesday",
+					"wednesday",
+					"thursday",
+					"friday",
+					"saturday",
+				];
+				const day = days[new Date().getDay()];
+				const timeNow = new Date().toLocaleTimeString("en-US", {
+					hour12: false,
+					hour: "numeric",
+					minute: "numeric",
+				});
+
+				// check if at this time location is open
+				locationByName.map((item) => {
+					try {
+						const time = JSON.parse(item.time);
+						if (time[day].open < timeNow && time[day].close < timeNow) {
+							return {
+								...item,
+								isOpen: true,
+							};
+						} else {
+							return {
+								...item,
+								isOpen: false,
+							};
+						}
+					} catch (error) {
+						return {
+							...item,
+							isOpen: false,
+						};
+					}
+				});
+
+				// add field menu startFrom: "lowest price menu to highest price menu"
+				locationByName.map((item) => {
+					try {
+						const menu = item.menus.sort((a, b) => {
+							return a.price - b.price;
+						});
+						// convert price to string format K
+						// change if 1000 to 1k
+						return (item.startFrom = `${menu[0].price} - ${
+							menu[menu.length - 1].price
+						}`);
+					} catch (err) {
+						return (item.startFrom = 0);
+					}
+				});
+
+				res.status(200).send({
+					status: "success",
+					message: "Get location by name successfully",
+					data: locationByName,
+				});
 			} else if (priceFrom && priceTo) {
 				const locationByPrice = await location.findAll({
 					// pagination
