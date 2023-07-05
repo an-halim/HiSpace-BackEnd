@@ -28,6 +28,8 @@ jobs:
             git pull origin master 
             git status
             ls -la
+            npm install -g yarn
+            npm install -g pm2 
             yarn install
             pm2 reload hispace
             pm2 restart hispace
