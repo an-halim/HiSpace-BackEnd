@@ -21,6 +21,8 @@ app.use(
 		methods: ["GET", "POST", "PUT", "DELETE"],
 	})
 );
+app.use(helmet());
+
 app.use(express.static("src/build"));
 app.use(morgan("dev"));
 app.use(express.json());
