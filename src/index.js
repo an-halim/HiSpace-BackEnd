@@ -30,8 +30,6 @@ app.use(express.urlencoded({ extended: true }));
 try {
 	console.log("Connecting to database...");
 	await db.sync();
-	// await models();
-	// await dropAll();
 
 	console.log("Database connected");
 } catch (err) {
