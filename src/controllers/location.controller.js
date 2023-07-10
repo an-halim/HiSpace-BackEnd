@@ -742,6 +742,78 @@ const locationController = {
 							[Op.between]: [longitude - 0.5, Number(longitude) + 0.5],
 						},
 					},
+					include: [
+						{
+							model: galery,
+							attributes: {
+								exclude: [
+									"locationId",
+									"locationLocationId",
+									"createdAt",
+									"updatedAt",
+								],
+							},
+						},
+						{
+							model: menu,
+							attributes: ["menuId", "name", "price"],
+						},
+					],
+				});
+
+				const days = [
+					"sunday",
+					"monday",
+					"tuesday",
+					"wednesday",
+					"thursday",
+					"friday",
+					"saturday",
+				];
+				const day = days[new Date().getDay()];
+				const timeNow = new Date().toLocaleTimeString("en-US", {
+					hour12: false,
+					hour: "numeric",
+					minute: "numeric",
+				});
+
+				// check if at this time location is open
+				locationByLocation.map((item) => {
+					try {
+						const time = JSON.parse(item.time);
+						if (time[day].open < timeNow && time[day].close < timeNow) {
+							return {
+								...item,
+								isOpen: true,
+							};
+						} else {
+							return {
+								...item,
+								isOpen: false,
+							};
+						}
+					} catch (error) {
+						return {
+							...item,
+							isOpen: false,
+						};
+					}
+				});
+
+				// add field menu startFrom: "lowest price menu to highest price menu"
+				locationByLocation.map((item) => {
+					try {
+						const menu = item.menus.sort((a, b) => {
+							return a.price - b.price;
+						});
+						// convert price to string format K
+						// change if 1000 to 1k
+						return (item.startFrom = `${menu[0].price} - ${
+							menu[menu.length - 1].price
+						}`);
+					} catch (err) {
+						return (item.startFrom = 0);
+					}
 				});
 
 				locationByLocation.length > 0
@@ -867,7 +939,73 @@ const locationController = {
 								},
 							},
 						},
+						{
+							model: galery,
+							attributes: {
+								exclude: [
+									"locationId",
+									"locationLocationId",
+									"createdAt",
+									"updatedAt",
+								],
+							},
+						},
 					],
+				});
+
+				const days = [
+					"sunday",
+					"monday",
+					"tuesday",
+					"wednesday",
+					"thursday",
+					"friday",
+					"saturday",
+				];
+				const day = days[new Date().getDay()];
+				const timeNow = new Date().toLocaleTimeString("en-US", {
+					hour12: false,
+					hour: "numeric",
+					minute: "numeric",
+				});
+
+				// check if at this time location is open
+				locationByPrice.map((item) => {
+					try {
+						const time = JSON.parse(item.time);
+						if (time[day].open < timeNow && time[day].close < timeNow) {
+							return {
+								...item,
+								isOpen: true,
+							};
+						} else {
+							return {
+								...item,
+								isOpen: false,
+							};
+						}
+					} catch (error) {
+						return {
+							...item,
+							isOpen: false,
+						};
+					}
+				});
+
+				// add field menu startFrom: "lowest price menu to highest price menu"
+				locationByPrice.map((item) => {
+					try {
+						const menu = item.menus.sort((a, b) => {
+							return a.price - b.price;
+						});
+						// convert price to string format K
+						// change if 1000 to 1k
+						return (item.startFrom = `${menu[0].price} - ${
+							menu[menu.length - 1].price
+						}`);
+					} catch (err) {
+						return (item.startFrom = 0);
+					}
 				});
 
 				locationByPrice.length > 0
