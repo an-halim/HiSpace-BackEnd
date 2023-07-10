@@ -29,9 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 
 try {
 	console.log("Connecting to database...");
-	await db.authenticate({
-		logging: false,
-	});
+	await db.sync();
 	// await models();
 	// await dropAll();
 
