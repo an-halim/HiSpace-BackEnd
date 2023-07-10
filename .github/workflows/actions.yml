@@ -41,9 +41,6 @@ jobs:
         run: |
           postman collection run "20465186-a939d72f-3737-473d-8cdb-b816b1cec0bd" --env-var "url=http://localhost:3000" --env-var "prodUrl=http://localhost:3000"
 
-
-          name: Automated API tests using Postman CLI
-
   deploy:
     runs-on: ubuntu-latest
 
