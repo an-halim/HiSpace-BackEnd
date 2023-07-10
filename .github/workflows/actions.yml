@@ -14,6 +14,10 @@ jobs:
         with:
           node-version: 16
 
+      - name: create env file
+        run: |
+          touch .env
+          echo ENV_DATAS=${{ secrets.ENV_DATAS }} >> .env
       - name: Install app dependencies
         run: yarn install
 
