@@ -1,0 +1,64 @@
+name: CI/CD Pipeline
+
+on: push
+
+jobs:
+  automated-api-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Install app dependencies
+        run: yarn install
+
+      - name: Start API app locally
+        run: yarn start &
+        env:
+          API_HOST: http://localhost:3000
+
+      - name: Wait for API app to start
+        run: sleep 10
+
+      - name: Run API tests
+        run: |
+          export API_HOST=$API_HOST
+
+      - name: Install Postman CLI
+        run: |
+          curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+      - name: Login to Postman CLI
+        run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
+      - name: Run API tests
+        run: |
+          postman collection run "20465186-a939d72f-3737-473d-8cdb-b816b1cec0bd" --env-var "url=$API_HOST" --env-var "prodUrl=$API_HOST"
+
+
+          name: Automated API tests using Postman CLI
+
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Deploy Using ssh
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd ~/app/HiSpace-BackEnd
+            git pull origin master 
+            git status
+            yarn install
+            pm2 reload hispace
+            pm2 restart hispace
+  
