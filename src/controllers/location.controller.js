@@ -1240,11 +1240,12 @@ const locationController = {
 							locationId,
 						},
 					});
+					console.log(result);
 
-					uploadResult.map((image) => {
+					await uploadResult.map((image) => {
 						galery.create({
-							locationId: result.locationId,
-							locationLocationId: result.locationId,
+							locationId: locationId,
+							locationLocationId: locationId,
 							imageUrl: image,
 						});
 					});
