@@ -116,38 +116,6 @@ const locationController = {
 			});
 		}
 	},
-	// 	try {
-	// 		const {
-	// 			name,
-	// 			address,
-	// 			longitude,
-	// 			latitude,
-	// 			owner,
-	// 			galeryId,
-	// 			description,
-	// 			time,
-	// 		} = req.body;
-	// 		const newLocation = await location.create({
-	// 			name,
-	// 			address,
-	// 			longitude,
-	// 			latitude,
-	// 			owner,
-	// 			galeryId,
-	// 			description,
-	// 			time,
-	// 		});
-	// 		res.status(201).send({
-	// 			message: "Location successfully created",
-	// 			data: newLocation,
-	// 		});
-	// 	} catch (error) {
-	// 		console.log(error);
-	// 		res.status(500).send({
-	// 			message: "Internal Server Error",
-	// 		});
-	// 	}
-	// },
 	async getAllLocation(req, res) {
 		let page = Number(req?.query?.page) || 1;
 		let limit = Number(req?.query?.limit) || 5;
@@ -432,9 +400,9 @@ const locationController = {
 								return a.price - b.price;
 							});
 							// convert price to string format K
-							item.startFrom = `${menu[0].price} - ${
-								menu[menu.length - 1].price
-							}`;
+							item.startFrom = `${menu[0].price.replace("000", "K")} - ${menu[
+								menu.length - 1
+							].price.replace("000", "K")}`;
 						} catch (err) {
 							item.startFrom = 0;
 						}
@@ -1142,13 +1110,13 @@ const locationController = {
 						const menu = item.menus.sort((a, b) => {
 							return a.price - b.price;
 						});
-						// convert price to string format K
-						// change if 1000 to 1k
-						return (item.startFrom = `${menu[0].price} - ${
-							menu[menu.length - 1].price
-						}`);
+
+						return (item.startFrom = `${menu[0].price.replace(
+							"000",
+							"k"
+						)} - ${menu[menu.length - 1].price.replace("000", "k")}`);
 					} catch (err) {
-						return (item.startFrom = 0);
+						return (item.startFrom = "0k");
 					}
 				});
 
@@ -1240,9 +1208,8 @@ const locationController = {
 							locationId,
 						},
 					});
-					console.log(result);
 
-					await uploadResult.map((image) => {
+					uploadResult.map((image) => {
 						galery.create({
 							locationId: locationId,
 							locationLocationId: locationId,

@@ -23,6 +23,13 @@ const menuController = {
 				});
 			}
 
+			// delete all menu
+			await menu.destroy({
+				where: {
+					locationId,
+				},
+			});
+
 			if (req.body.length > 1) {
 				let data = req.body.map((item) => {
 					return {
