@@ -23,6 +23,13 @@ const facilityController = {
 				});
 			}
 
+			// find all facility and delete
+			await facility.destroy({
+				where: {
+					locationId,
+				},
+			});
+
 			if (req.body.length > 1) {
 				let data = req.body.map((item) => {
 					return {
