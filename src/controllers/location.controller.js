@@ -416,10 +416,15 @@ const locationController = {
 					});
 
 					openLocationSort.map((item) => {
+						if (wish.length === 0) {
+							return (item.isWish = false);
+						}
 						wish.map((wish) => {
 							if (item.locationId === wish.locationId) {
+								console.log("true");
 								return (item.isWish = true);
 							} else {
+								console.log("false");
 								return (item.isWish = false);
 							}
 						});
@@ -782,6 +787,18 @@ const locationController = {
 					} catch (err) {
 						return (item.startFrom = 0);
 					}
+				});
+
+				locationByLocation.map((item) => {
+					wish.map((wish) => {
+						if (item.locationId === wish.locationId) {
+							console.log("true");
+							return (item.isWish = true);
+						} else {
+							console.log("false");
+							return (item.isWish = false);
+						}
+					});
 				});
 
 				locationByLocation.length > 0
